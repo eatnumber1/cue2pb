@@ -1,0 +1,39 @@
+file {
+  type: TYPE_WAVE
+  path: "The Specials - Singles - 01 - Gangsters.wav"
+  track {
+    type: TYPE_AUDIO
+    number: 1
+    tags {
+      title: "Gangsters"
+      performer: "The Specials"
+    }
+    index {
+      number: 1
+      position {
+      }
+    }
+  }
+}
+file {
+  type: TYPE_WAVE
+  path: "The Specials - Singles - 02 - Rudi, A Message To You.wav"
+  track {
+    type: TYPE_AUDIO
+    number: 2
+    tags {
+      title: "Rudi, A Message To You"
+      performer: "The Specials"
+    }
+    index {
+      position {
+      }
+    }
+    index {
+      number: 1
+      position {
+        frame: 28
+      }
+    }
+  }
+}

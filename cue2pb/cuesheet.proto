@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package cue2pb;
+
+message Cuesheet {
+  message MSF {
+    int32 minute = 1;
+    int32 second = 2;
+    int32 frame = 3;
+  }
+
+  message Index {
+    int32 number = 1;
+    MSF position = 2;
+  }
+
+  message Track {
+    enum Type {
+      TYPE_UNKNOWN = 0;  // Unknown track type. Should never happen.
+      TYPE_AUDIO = 1;  // Audio/Music (2352)
+      TYPE_CDG = 2;  // Karaoke CD+G (2448)
+      TYPE_MODE1_2048 = 3;  // CDROM Mode1 Data (cooked)
+      TYPE_MODE1_2352 = 4;  // CDROM Mode1 Data (raw)
+      TYPE_MODE2_2336 = 5;  // CDROM-XA Mode2 Data (form mixed)
+      TYPE_MODE2_2352 = 6;  // CDROM-XA Mode2 Data (raw)
+      TYPE_CDI_2336 = 7;  // CDI Mode2 Data
+      TYPE_CDI_2352 = 8;  // CDI Mode2 Data
+    }
+
+    enum Flag {
+      FLAG_UNKNOWN = 0;  // should never happen
+      FLAG_DCP = 1;  // Digital copy permitted
+      FLAG_4CH = 2;  // Four channel audio
+      FLAG_PRE = 3;  // Pre-emphasis enabled (audio tracks only)
+    }
+
+    Type type = 1;
+    int32 number = 2;
+    Tags tags = 3;
+    repeated Flag flag = 4;
+
+    // International Standard Recording Code
+    string isrc = 5;
+
+    MSF postgap = 6;
+    MSF pregap = 7;
+    repeated Index index = 8;
+  }
+
+  message File {
+    enum Type {
+      TYPE_UNKNOWN = 0;  // should never happen
+      TYPE_WAVE = 1;
+      TYPE_MP3 = 2;
+      TYPE_AIFF = 3;
+      TYPE_BINARY = 4;  // little endian
+      TYPE_MOTOROLA = 5;  // big endian
+    }
+
+    Type type = 1;
+    string path = 2;
+    repeated Track track = 3;
+  }
+
+  // A comment tag is a tag which is present as a comment, and is therefore
+  // not part of the cuesheet specification. E.g. `REM GENRE Alternative`.
+  message CommentTag {
+    string name = 1;
+    string value = 2;
+  }
+
+  message Tags {
+    string title = 1;
+    string performer = 2;
+    string songwriter = 3;
+
+    repeated CommentTag comment_tag = 4;
+  }
+
+  Tags tags = 1;
+
+  // Media Catalog Number (MCN)
+  string catalog = 2;
+
+  // The path to a file containg CD-Text
+  string cd_text_file = 3;
+
+  repeated File file = 4;
+}

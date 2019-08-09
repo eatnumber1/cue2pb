@@ -1,0 +1,53 @@
+tags {
+  title: "Loveless"
+  performer: "My Bloody Valentine"
+  comment_tag {
+    name: "GENRE"
+    value: "Alternative"
+  }
+  comment_tag {
+    name: "DATE"
+    value: "1991"
+  }
+  comment_tag {
+    name: "DISCID"
+    value: "860B640B"
+  }
+  comment_tag {
+    name: "COMMENT"
+    value: "ExactAudioCopy v0.95b4"
+  }
+}
+file {
+  type: TYPE_WAVE
+  path: "My Bloody Valentine - Loveless.wav"
+  track {
+    type: TYPE_AUDIO
+    number: 1
+    tags {
+      title: "Only Shallow"
+      performer: "My Bloody Valentine"
+    }
+    index {
+      number: 1
+      position {
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 2
+    tags {
+      title: "Loomer"
+      performer: "My Bloody Valentine"
+    }
+    index {
+      number: 1
+      position {
+        minute: 4
+        second: 17
+        frame: 52
+      }
+    }
+  }
+}

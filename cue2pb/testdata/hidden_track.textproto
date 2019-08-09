@@ -1,0 +1,51 @@
+tags {
+  title: "Silent Alarm"
+  performer: "Bloc Party"
+}
+file {
+  type: TYPE_WAVE
+  path: "Bloc Party - Silent Alarm.flac"
+  track {
+    type: TYPE_AUDIO
+    number: 1
+    tags {
+      title: "Like Eating Glass"
+      performer: "Bloc Party"
+    }
+    index {
+      position {
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 3
+        second: 22
+        frame: 70
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 2
+    tags {
+      title: "Helicopter"
+      performer: "Bloc Party"
+    }
+    index {
+      position {
+        minute: 7
+        second: 42
+        frame: 69
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 7
+        second: 44
+        frame: 69
+      }
+    }
+  }
+}

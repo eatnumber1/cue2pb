@@ -1,0 +1,395 @@
+tags {
+  title: "Singles"
+  performer: "The Specials"
+  songwriter: "Me"
+  comment_tag {
+    name: "GENRE"
+    value: "Ska"
+  }
+  comment_tag {
+    name: "DATE"
+    value: "1991"
+  }
+  comment_tag {
+    name: "DISCID"
+    value: "D00DA810"
+  }
+  comment_tag {
+    name: "COMMENT"
+    value: "ExactAudioCopy v0.95b4"
+  }
+}
+catalog: "ABC01234"
+cd_text_file: "The Specials - Singles.cdtext"
+file {
+  type: TYPE_WAVE
+  path: "The Specials - Singles.wav"
+  track {
+    type: TYPE_AUDIO
+    number: 1
+    tags {
+      title: "Gangsters"
+      performer: "The Specials"
+    }
+    flag: FLAG_DCP
+    flag: FLAG_PRE
+    isrc: "XYZ56789"
+    postgap {
+      second: 1
+    }
+    pregap {
+      frame: 30
+    }
+    index {
+      number: 1
+      position {
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 2
+    tags {
+      title: "Rudi, A Message To You"
+      performer: "The Specials"
+    }
+    flag: FLAG_4CH
+    index {
+      position {
+        minute: 2
+        second: 47
+        frame: 74
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 2
+        second: 48
+        frame: 27
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 3
+    tags {
+      title: "Nite Klub"
+      performer: "The Specials"
+    }
+    flag: FLAG_DCP
+    flag: FLAG_PRE
+    flag: FLAG_4CH
+    index {
+      position {
+        minute: 5
+        second: 41
+        frame: 50
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 5
+        second: 42
+        frame: 27
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 4
+    tags {
+      title: "Too Much Too Young"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 8
+        second: 53
+        frame: 47
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 8
+        second: 54
+        frame: 37
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 5
+    tags {
+      title: "Guns Of Navarone"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 10
+        second: 59
+        frame: 20
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 11
+        frame: 17
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 6
+    tags {
+      title: "Rat Race"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 13
+        second: 20
+        frame: 55
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 13
+        second: 20
+        frame: 67
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 7
+    tags {
+      title: "Stereotype"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 16
+        second: 29
+        frame: 67
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 16
+        second: 30
+        frame: 30
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 8
+    tags {
+      title: "International Jet Set"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 20
+        second: 19
+        frame: 27
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 20
+        second: 20
+        frame: 20
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 9
+    tags {
+      title: "Do Nothing"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 24
+        second: 30
+        frame: 70
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 24
+        second: 32
+        frame: 27
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 10
+    tags {
+      title: "Ghost Town"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 28
+        second: 23
+        frame: 30
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 28
+        second: 23
+        frame: 42
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 11
+    tags {
+      title: "Why?"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 34
+        second: 21
+        frame: 37
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 34
+        second: 21
+        frame: 47
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 12
+    tags {
+      title: "Friday Night, Saturday Morning"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 38
+        second: 16
+        frame: 50
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 38
+        second: 16
+        frame: 55
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 13
+    tags {
+      title: "War Crimes"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 41
+        second: 50
+        frame: 7
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 41
+        second: 51
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 14
+    tags {
+      title: "Racist Friend"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 45
+        second: 50
+        frame: 55
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 45
+        second: 51
+        frame: 72
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 15
+    tags {
+      title: "Nelson Mandela"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 49
+        second: 35
+        frame: 55
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 49
+        second: 38
+        frame: 22
+      }
+    }
+  }
+  track {
+    type: TYPE_AUDIO
+    number: 16
+    tags {
+      title: "(What I Like Most About You Is Your) Girlfriend"
+      performer: "The Specials"
+    }
+    index {
+      position {
+        minute: 54
+        second: 11
+      }
+    }
+    index {
+      number: 1
+      position {
+        minute: 54
+        second: 12
+        frame: 40
+      }
+    }
+  }
+}
