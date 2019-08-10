@@ -13,7 +13,7 @@ namespace cue2pb {
 namespace {
 
 std::string QuoteIfNeeded(absl::string_view s) {
-  if (absl::StrContains(s, " ")) {
+  if (s.empty() || absl::StrContains(s, " ")) {
     return "\"" + std::string(s) + "\"";
   }
   return std::string(s);

@@ -72,8 +72,10 @@ cc_test(
         ":file",
         ":errors",
         ":text_format",
+        "//cue2pb/testing:assertions",
         "@googletest//:gtest_main",
-        "@com_google_protobuf//:protobuf",
+        "@abseil//absl/types:optional",
+        "@abseil//absl/strings",
     ],
     data = glob([
         "testdata/*.cue",
@@ -93,6 +95,25 @@ cc_library(
         "@abseil//absl/strings:str_format",
         "@abseil//absl/types:optional",
     ],
+)
+
+cc_test(
+    name = "unparser_test",
+    srcs = ["unparser_test.cc"],
+    deps = [
+        ":unparser",
+        ":file",
+        ":errors",
+        ":text_format",
+        "//cue2pb/testing:assertions",
+        "@googletest//:gtest_main",
+        "@abseil//absl/types:optional",
+        "@abseil//absl/strings",
+    ],
+    data = glob([
+        "testdata/*.unparsed_cue",
+        "testdata/*.textproto"
+    ]),
 )
 
 cc_binary(

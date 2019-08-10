@@ -10,8 +10,8 @@
 
 namespace cue2pb {
 
-absl::optional<Cuesheet> ParseCuesheetFromTextProto(
-    std::istream *input, GError **error);
+absl::optional<Cuesheet> CuesheetFromTextProto(std::istream *input,
+                                               GError **error);
 
 }  // namespace cue2pb
 

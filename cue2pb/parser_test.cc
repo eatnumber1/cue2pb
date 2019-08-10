@@ -9,51 +9,29 @@
 #include "cue2pb/file.h"
 #include "cue2pb/text_format.h"
 #include "cue2pb/errors.h"
+#include "cue2pb/testing/assertions.h"
 #include "absl/types/optional.h"
 #include "absl/strings/string_view.h"
-#include "google/protobuf/util/message_differencer.h"
-#include "google/protobuf/message.h"
 
 namespace cue2pb {
 namespace {
 
-using ::google::protobuf::util::MessageDifferencer;
-using ::google::protobuf::Message;
-using ::testing::AssertionResult;
-using ::testing::AssertionSuccess;
-using ::testing::AssertionFailure;
-
-AssertionResult IsOk(GError *err) {
-  if (err) {
-    return AssertionFailure() << err->message;
-  } else {
-    return AssertionSuccess() << "No error occurred";
-  }
-}
-
-AssertionResult IsEqual(const Message &a, const Message &b) {
-  std::string differences;
-  MessageDifferencer differencer;
-  differencer.ReportDifferencesToString(&differences);
-  differencer.set_repeated_field_comparison(MessageDifferencer::AS_LIST);
-  if (differencer.Compare(a, b)) {
-    return AssertionSuccess()
-      << "Protos are equal. They are " << a.DebugString();
-  } else {
-    return AssertionFailure() << "Protos differ: " << differences;
-  }
-}
-
-std::string FilenameToPath(absl::string_view filename) {
+std::string TestdataToPath(absl::string_view filename) {
   return "cue2pb/testdata/" + std::string(filename);
 }
 
-Cuesheet ReadCueTextProtoFileOrDie(absl::string_view filename) {
+std::ifstream OpenTestdataOrDie(absl::string_view filename) {
   GError *err = nullptr;
-  std::ifstream istrm = OpenInputFile(FilenameToPath(filename), &err);
+  std::ifstream istrm = OpenInputFile(TestdataToPath(filename), &err);
   CHECK_OK(err);
+  return istrm;
+}
 
-  auto cuesheet = ParseCuesheetFromTextProto(&istrm, &err);
+Cuesheet CuesheetFromProtoFileOrDie(absl::string_view filename) {
+  std::ifstream istrm = OpenTestdataOrDie(filename);
+
+  GError *err = nullptr;
+  auto cuesheet = CuesheetFromTextProto(&istrm, &err);
   CHECK_OK(err);
 
   return std::move(*cuesheet);
@@ -62,22 +40,16 @@ Cuesheet ReadCueTextProtoFileOrDie(absl::string_view filename) {
 Cuesheet CuesheetFromProtoStringOrDie(absl::string_view textproto) {
   std::istringstream istrm{std::string(textproto)};
   GError *err = nullptr;
-  auto cuesheet = ParseCuesheetFromTextProto(&istrm, &err);
+  auto cuesheet = CuesheetFromTextProto(&istrm, &err);
   CHECK_OK(err);
 
   return std::move(*cuesheet);
 }
 
-absl::optional<Cuesheet> ParseCuesheetFromString(absl::string_view s, GError **error) {
+absl::optional<Cuesheet> ParseCuesheetFromString(absl::string_view s,
+                                                 GError **error) {
   std::istringstream istrm{std::string(s)};
   return ParseCuesheet(&istrm, error);
-}
-
-std::ifstream OpenInputFileOrDie(absl::string_view filename) {
-  GError *err = nullptr;
-  std::ifstream istrm = OpenInputFile(FilenameToPath(filename), &err);
-  CHECK_OK(err);
-  return istrm;
 }
 
 struct CuesheetProtoFiles {
@@ -104,9 +76,9 @@ class CuesheetEqualsProtoTest :
 TEST_P(CuesheetEqualsProtoFilesTest, MatchFiles) {
   auto files = GetParam();
 
-  Cuesheet expected = ReadCueTextProtoFileOrDie(files.proto);
+  Cuesheet expected = CuesheetFromProtoFileOrDie(files.proto);
 
-  std::ifstream istrm = OpenInputFileOrDie(files.cuesheet);
+  std::ifstream istrm = OpenTestdataOrDie(files.cuesheet);
 
   GError *err = nullptr;
   auto found = ParseCuesheet(&istrm, &err);

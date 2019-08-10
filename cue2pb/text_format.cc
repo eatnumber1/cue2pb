@@ -10,8 +10,8 @@ namespace cue2pb {
 using ::google::protobuf::io::IstreamInputStream;
 using ::google::protobuf::TextFormat;
 
-absl::optional<Cuesheet> ParseCuesheetFromTextProto(
-    std::istream *input, GError **error) {
+absl::optional<Cuesheet> CuesheetFromTextProto(std::istream *input,
+                                               GError **error) {
   IstreamInputStream istrm(input);
   GErrorCollector collector(
       error, CUE2PB_ERROR, cue2pb::ERR_PROTO, /*options=*/{});

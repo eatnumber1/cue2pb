@@ -45,11 +45,14 @@ bool ProtoToCue(absl::string_view protofile, GError **error) {
 
   Cuesheet cuesheet;
   if (textformat) {
-    auto c = ParseCuesheetFromTextProto(&istrm, error);
+    auto c = CuesheetFromTextProto(&istrm, error);
     if (!c) return false;
     cuesheet = std::move(*c);
   } else {
-    g_assert(false);  // unimplemented
+    if (!cuesheet.ParseFromIstream(&istrm)) {
+      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to parse binary proto");
+      return false;
+    }
   }
 
   if (!UnparseCuesheet(cuesheet, &std::cout, error)) return false;
@@ -58,18 +61,23 @@ bool ProtoToCue(absl::string_view protofile, GError **error) {
 }
 
 bool CueToProto(absl::string_view cuefile, GError **error) {
-  g_assert(absl::GetFlag(FLAGS_textformat));
-
   std::ifstream istrm = OpenInputFile(cuefile, error);
   if (!istrm.is_open()) return false;
 
   absl::optional<Cuesheet> cuesheet = ParseCuesheet(&istrm, error);
   if (!cuesheet) return false;
 
-  OstreamOutputStream cout_os(&std::cout);
-  if (!TextFormat::Print(*cuesheet, &cout_os)) {
-    SetError(error, cue2pb::ERR_UNKNOWN, "Failed to print cuesheet");
-    return false;
+  if (absl::GetFlag(FLAGS_textformat)) {
+    OstreamOutputStream cout_os(&std::cout);
+    if (!TextFormat::Print(*cuesheet, &cout_os)) {
+      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to print cuesheet");
+      return false;
+    }
+  } else {
+    if (!cuesheet->SerializeToOstream(&std::cout)) {
+      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to serialize binary proto");
+      return false;
+    }
   }
 
   return true;
