@@ -109,8 +109,8 @@ bool Main(absl::Span<absl::string_view> args, GError **error) {
 int main(int argc, char *argv[]) {
   absl::SetProgramUsageMessage(
       absl::StrCat(
-        "Convert CD cuesheets to/from protobufs.\nUsage: ", getprogname(),
-        " cuefile"));
+        "Convert CD cuesheets to/from protobufs.\n",
+        "Usage: ", getprogname(), " [flags] cuefile"));
   absl::FlagsUsageConfig config;
   config.contains_help_flags = [](absl::string_view path) {
     return path == "cue2pb/main.cc";
