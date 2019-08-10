@@ -61,13 +61,20 @@ bool ProtoToCue(absl::string_view protofile, GError **error) {
 }
 
 bool CueToProto(absl::string_view cuefile, GError **error) {
-  std::ifstream istrm = OpenInputFile(cuefile, error);
+  bool textformat = absl::GetFlag(FLAGS_textformat);
+
+  auto mode = std::ios::in;
+  if (!textformat) {
+    mode |= std::ios::binary;
+  }
+
+  std::ifstream istrm = OpenInputFile(cuefile, mode, error);
   if (!istrm.is_open()) return false;
 
   absl::optional<Cuesheet> cuesheet = ParseCuesheet(&istrm, error);
   if (!cuesheet) return false;
 
-  if (absl::GetFlag(FLAGS_textformat)) {
+  if (textformat) {
     OstreamOutputStream cout_os(&std::cout);
     if (!TextFormat::Print(*cuesheet, &cout_os)) {
       SetError(error, cue2pb::ERR_UNKNOWN, "Failed to print cuesheet");
