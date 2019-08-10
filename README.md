@@ -32,6 +32,10 @@ Convert a textual protobuf to a cuesheet.
 $ cue2pb --textformat --proto_to_cue foo.textproto
 ```
 
+If you wish to work with Cuesheet protos from another language, feel free to
+send pull requests adding Bazel build rules to generate the protobuf for
+additional languages as desired.
+
 [Cuesheet]: https://en.wikipedia.org/wiki/Cue_sheet_(computing)
 [cuesheet.proto]: cue2pb/cuesheet.proto
 [cue2pb]: cue2pb/main.cc
