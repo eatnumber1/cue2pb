@@ -3,16 +3,15 @@
 
 #include <fstream>
 #include <ios>
+#include <string_view>
 
-#include "cue2pb/errors.h"
-#include "absl/strings/string_view.h"
+#include "rhutil/status.h"
 
 namespace cue2pb {
 
-std::ifstream OpenInputFile(
-    absl::string_view path, GError **error);
-std::ifstream OpenInputFile(
-    absl::string_view path, std::ios_base::openmode mode, GError **error);
+rhutil::StatusOr<std::ifstream> OpenInputFile(std::string_view path);
+rhutil::StatusOr<std::ifstream> OpenInputFile(std::string_view path,
+                                              std::ios_base::openmode mode);
 
 }  // namespace cue2pb
 

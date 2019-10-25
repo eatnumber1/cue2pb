@@ -34,8 +34,7 @@ http_archive(
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
-new_local_repository(
-    name = "glib",
-    path = "/opt/homebrew/opt/glib",
-    build_file = "third_party/glib.BUILD",
+local_repository(
+    name = "rhutil",
+    path = "third_party/rhutil",
 )

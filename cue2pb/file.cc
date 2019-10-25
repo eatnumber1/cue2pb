@@ -1,25 +1,30 @@
 #include "cue2pb/file.h"
 
-#include <cstring>
-#include <cerrno>
+#include <cassert>
+
+#include "rhutil/errno.h"
+#include "absl/strings/str_format.h"
 
 namespace cue2pb {
 
-std::ifstream OpenInputFile(absl::string_view path, GError **error) {
-  return OpenInputFile(path, std::ios::in, error);
+using ::rhutil::StatusOr;
+using ::rhutil::Status;
+
+StatusOr<std::ifstream> OpenInputFile(std::string_view path) {
+  return OpenInputFile(path, std::ios::in);
 }
 
-std::ifstream OpenInputFile(
-    absl::string_view path, std::ios_base::openmode mode, GError **error) {
+StatusOr<std::ifstream> OpenInputFile(std::string_view path,
+                                      std::ios_base::openmode mode) {
   std::ifstream istrm;
   istrm.open(std::string(path), mode);
   if (istrm.fail()) {
-    SetError(error, cue2pb::ERR_OS, "Failed to open %s: %s", path,
-             std::strerror(errno));
-    return istrm;
+    auto st = rhutil::ErrnoAsStatus();
+    return Status(st.code(), absl::StrFormat("Failed to open %s: %s", path,
+                                             st.message()));
   }
-  g_assert(istrm.is_open());
-  return istrm;
+  assert(istrm.is_open());
+  return std::move(istrm);
 }
 
 }  // namespace cue2pb

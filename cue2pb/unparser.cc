@@ -2,26 +2,31 @@
 
 #include <utility>
 #include <string>
+#include <string_view>
 
 #include "absl/strings/match.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/types/optional.h"
 
 namespace cue2pb {
+
+using ::rhutil::StatusOr;
+using ::rhutil::Status;
+using ::rhutil::InvalidArgumentError;
+using ::rhutil::OkStatus;
+
 namespace {
 
-std::string QuoteIfNeeded(absl::string_view s) {
+std::string QuoteIfNeeded(std::string_view s) {
   if (s.empty() || absl::StrContains(s, " ")) {
     return "\"" + std::string(s) + "\"";
   }
   return std::string(s);
 }
 
-absl::optional<std::string> FileTypeToString(
-    Cuesheet::File::Type type, GError **error) {
+StatusOr<std::string> FileTypeToString(Cuesheet::File::Type type) {
   using File = ::cue2pb::Cuesheet::File;
+
   std::string type_str;
   switch (type) {
     case File::TYPE_WAVE:
@@ -40,18 +45,16 @@ absl::optional<std::string> FileTypeToString(
       type_str = "MOTOROLA";
       break;
     default:
-      SetError(
-          error, cue2pb::ERR_SYNTAX, "Unknown file type: '%s'",
-          File::Type_Name(type));
-      return absl::nullopt;
+      return InvalidArgumentError(
+          absl::StrFormat("Unknown file type: '%s'", File::Type_Name(type)));
   }
 
-  return absl::make_optional(std::move(type_str));
+  return std::move(type_str);
 }
 
-absl::optional<std::string> TrackTypeToString(
-    Cuesheet::Track::Type type, GError **error) {
+StatusOr<std::string> TrackTypeToString(Cuesheet::Track::Type type) {
   using Track = ::cue2pb::Cuesheet::Track;
+
   std::string type_str;
   switch (type) {
     case Track::TYPE_AUDIO:
@@ -79,18 +82,16 @@ absl::optional<std::string> TrackTypeToString(
       type_str = "CDI/2352";
       break;
     default:
-      SetError(
-          error, cue2pb::ERR_SYNTAX, "Unknown track type: '%s'",
-          Track::Type_Name(type));
-      return absl::nullopt;
+      return InvalidArgumentError(
+          absl::StrFormat("Unknown track type: '%s'", Track::Type_Name(type)));
   }
 
-  return absl::make_optional(std::move(type_str));
+  return std::move(type_str);
 }
 
-absl::optional<std::string> FlagToString(
-    Cuesheet::Track::Flag flag, GError **error) {
+StatusOr<std::string> FlagToString(Cuesheet::Track::Flag flag) {
   using Track = ::cue2pb::Cuesheet::Track;
+
   std::string flag_str;
   switch (flag) {
     case Track::FLAG_DCP:
@@ -103,13 +104,11 @@ absl::optional<std::string> FlagToString(
       flag_str = "PRE";
       break;
     default:
-      SetError(
-          error, cue2pb::ERR_SYNTAX, "Unknown track flag: '%s'",
-          Track::Flag_Name(flag));
-      return absl::nullopt;
+      return InvalidArgumentError(
+          absl::StrFormat("Unknown track flag: '%s'", Track::Flag_Name(flag)));
   }
 
-  return absl::make_optional(std::move(flag_str));
+  return std::move(flag_str);
 }
 
 std::string MSFToString(const Cuesheet::MSF &msf) {
@@ -121,8 +120,7 @@ bool IsZeroMSF(const Cuesheet::MSF &msf) {
   return msf.minute() == 0 && msf.second() == 0 && msf.frame() == 0;
 }
 
-bool UnparseTags(
-    const Cuesheet::Tags &tags, std::ostream *output, GError **error) {
+Status UnparseTags(const Cuesheet::Tags &tags, std::ostream *output) {
   for (const Cuesheet::CommentTag &tag : tags.comment_tag()) {
     *output << "REM " << tag.name() << " " << QuoteIfNeeded(tag.value())
             << std::endl;
@@ -141,25 +139,23 @@ bool UnparseTags(
     *output << "SONGWRITER " << QuoteIfNeeded(tags.songwriter())
             << std::endl;
   }
-  return true;
+
+  return OkStatus();
 }
 
-bool UnparseIndex(const Cuesheet::Index &index, std::ostream *output,
-                  GError **error) {
+Status UnparseIndex(const Cuesheet::Index &index, std::ostream *output) {
   *output << "INDEX " << absl::StrFormat("%02d", index.number()) << " "
           << MSFToString(index.position()) << std::endl;
-  return true;
+  return OkStatus();
 }
 
-bool UnparseTrack(const Cuesheet::Track &track, std::ostream *output,
-                  GError **error) {
-  auto type = TrackTypeToString(track.type(), error);
-  if (!type) return false;
+Status UnparseTrack(const Cuesheet::Track &track, std::ostream *output) {
+  ASSIGN_OR_RETURN(auto type, TrackTypeToString(track.type()));
 
-  *output << "TRACK " << absl::StrFormat("%02d", track.number()) << " " << *type
+  *output << "TRACK " << absl::StrFormat("%02d", track.number()) << " " << type
           << std::endl;
 
-  if (!UnparseTags(track.tags(), output, error)) return false;
+  RETURN_IF_ERROR(UnparseTags(track.tags(), output));
 
   if (!track.isrc().empty()) {
     *output << "ISRC " << track.isrc() << std::endl;
@@ -167,9 +163,8 @@ bool UnparseTrack(const Cuesheet::Track &track, std::ostream *output,
 
   std::vector<std::string> flags;
   for (int i = 0; i < track.flag_size(); i++) {
-    auto flag_str = FlagToString(track.flag(i), error);
-    if (!flag_str) return false;
-    flags.emplace_back(std::move(*flag_str));
+    ASSIGN_OR_RETURN(auto flag_str, FlagToString(track.flag(i)));
+    flags.emplace_back(std::move(flag_str));
   }
   if (!flags.empty()) {
     *output << "FLAGS " << absl::StrJoin(flags, " ") << std::endl;
@@ -184,31 +179,28 @@ bool UnparseTrack(const Cuesheet::Track &track, std::ostream *output,
   }
 
   for (const Cuesheet::Index &index : track.index()) {
-    if (!UnparseIndex(index, output, error)) return false;
+    RETURN_IF_ERROR(UnparseIndex(index, output));
   }
 
-  return true;
+  return OkStatus();
 }
 
-bool UnparseFile(const Cuesheet::File &file, std::ostream *output,
-                 GError **error) {
-  auto type = FileTypeToString(file.type(), error);
-  if (!type) return false;
+Status UnparseFile(const Cuesheet::File &file, std::ostream *output) {
+  ASSIGN_OR_RETURN(auto type, FileTypeToString(file.type()));
 
-  *output << "FILE " << QuoteIfNeeded(file.path()) << " " << *type << std::endl;
+  *output << "FILE " << QuoteIfNeeded(file.path()) << " " << type << std::endl;
 
   for (const Cuesheet::Track &track : file.track()) {
-    if (!UnparseTrack(track, output, error)) return false;
+    RETURN_IF_ERROR(UnparseTrack(track, output));
   }
 
-  return true;
+  return OkStatus();
 }
 
 }  // namespace
 
-bool UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output,
-                     GError **error) {
-  if (!UnparseTags(cuesheet.tags(), output, error)) return false;
+Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output) {
+  RETURN_IF_ERROR(UnparseTags(cuesheet.tags(), output));
 
   if (!cuesheet.catalog().empty()) {
     *output << "CATALOG " << cuesheet.catalog() << std::endl;
@@ -220,10 +212,10 @@ bool UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output,
   }
 
   for (const Cuesheet::File &file : cuesheet.file()) {
-    if (!UnparseFile(file, output, error)) return false;
+    RETURN_IF_ERROR(UnparseFile(file, output));
   }
 
-  return true;
+  return OkStatus();
 }
 
 }  // namespace cue2pb

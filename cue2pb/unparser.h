@@ -4,12 +4,11 @@
 #include <ostream>
 
 #include "cue2pb/cuesheet.pb.h"
-#include "cue2pb/errors.h"
+#include "rhutil/status.h"
 
 namespace cue2pb {
 
-bool UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output,
-                     GError **error);
+rhutil::Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output);
 
 }  // namespace cue2pb
 

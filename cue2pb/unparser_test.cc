@@ -1,6 +1,7 @@
 #include "cue2pb/unparser.h"
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <fstream>
 #include <sstream>
@@ -10,65 +11,50 @@
 #include "gtest/gtest.h"
 #include "cue2pb/file.h"
 #include "cue2pb/text_format.h"
-#include "cue2pb/errors.h"
+#include "rhutil/status.h"
+#include "rhutil/errno.h"
 #include "cue2pb/testing/assertions.h"
-#include "absl/types/optional.h"
-#include "absl/strings/string_view.h"
+#include "rhutil/testing/assertions.h"
 
 namespace cue2pb {
+
+using ::rhutil::StatusOr;
+
 namespace {
 
-std::string TestdataToPath(absl::string_view filename) {
+std::string TestdataToPath(std::string_view filename) {
   return "cue2pb/testdata/" + std::string(filename);
 }
 
-std::ifstream OpenTestdataOrDie(absl::string_view filename) {
-  GError *err = nullptr;
-  std::ifstream istrm = OpenInputFile(TestdataToPath(filename), &err);
-  CHECK_OK(err);
-  return istrm;
+std::ifstream OpenTestdataOrDie(std::string_view filename) {
+  return OpenInputFile(TestdataToPath(filename)).ValueOrDie();
 }
 
-absl::optional<Cuesheet> CuesheetFromProtoString(absl::string_view textproto,
-                                                 GError **error) {
+StatusOr<Cuesheet> CuesheetFromProtoString(std::string_view textproto) {
   std::istringstream istrm{std::string(textproto)};
-  return CuesheetFromTextProto(&istrm, error);
+  return CuesheetFromTextProto(&istrm);
 }
 
-Cuesheet CuesheetFromProtoStringOrDie(absl::string_view textproto) {
-  GError *err = nullptr;
-  auto cuesheet = CuesheetFromProtoString(textproto, &err);
-  CHECK_OK(err);
-
-  return std::move(*cuesheet);
+Cuesheet CuesheetFromProtoStringOrDie(std::string_view textproto) {
+  return CuesheetFromProtoString(textproto).ValueOrDie();
 }
 
-Cuesheet CuesheetFromProtoFileOrDie(absl::string_view filename) {
+Cuesheet CuesheetFromProtoFileOrDie(std::string_view filename) {
   std::ifstream istrm = OpenTestdataOrDie(filename);
-
-  GError *err = nullptr;
-  auto cuesheet = CuesheetFromTextProto(&istrm, &err);
-  CHECK_OK(err);
-
-  return std::move(*cuesheet);
+  return CuesheetFromTextProto(&istrm).ValueOrDie();
 }
 
 std::string ReadFileEntirelyOrDie(std::string filename) {
   std::ifstream in = OpenTestdataOrDie(filename);
   std::stringstream sstr;
   sstr << in.rdbuf();
-  if (in.fail()) {
-    GError *err = nullptr;
-    SetError(&err, cue2pb::ERR_OS, "Failed to open '%s': %s", filename,
-             std::strerror(errno));
-    CHECK_OK(err);
-  }
+  if (in.fail()) CHECK_OK(rhutil::ErrnoAsStatus());
   return std::move(sstr).str();
 }
 
-absl::optional<std::string> UnparseCuesheet(Cuesheet cuesheet, GError **error) {
+StatusOr<std::string> UnparseCuesheet(Cuesheet cuesheet) {
   std::stringstream out;
-  if (!UnparseCuesheet(cuesheet, &out, error)) return absl::nullopt;
+  RETURN_IF_ERROR(UnparseCuesheet(cuesheet, &out));
   return out.str();
 }
 
@@ -94,11 +80,10 @@ TEST_P(CuesheetEqualsProtoFilesTest, MatchFiles) {
   std::string expected = ReadFileEntirelyOrDie(files.cuesheet);
   Cuesheet incue = CuesheetFromProtoFileOrDie(files.proto);
 
-  GError *err = nullptr;
-  auto found = UnparseCuesheet(incue, &err);
-  ASSERT_TRUE(IsOk(err));
+  auto found_or = UnparseCuesheet(incue);
+  ASSERT_TRUE(IsOk(found_or));
 
-  EXPECT_EQ(expected, *found);
+  EXPECT_EQ(expected, found_or.ValueOrDie());
 }
 
 TEST_P(CuesheetEqualsProtoTest, MatchSample) {
@@ -108,11 +93,10 @@ TEST_P(CuesheetEqualsProtoTest, MatchSample) {
 
   Cuesheet incue = CuesheetFromProtoStringOrDie(proto);
 
-  GError *err = nullptr;
-  auto found = UnparseCuesheet(incue, &err);
-  ASSERT_TRUE(IsOk(err));
+  auto found_or = UnparseCuesheet(incue);
+  ASSERT_TRUE(IsOk(found_or));
 
-  EXPECT_EQ(expected, *found);
+  EXPECT_EQ(expected, found_or.ValueOrDie());
 }
 
 INSTANTIATE_TEST_SUITE_P(

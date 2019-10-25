@@ -3,7 +3,6 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "cue2pb/errors.h"
 #include "google/protobuf/util/message_differencer.h"
 #include "google/protobuf/message.h"
 
@@ -14,14 +13,6 @@ using ::google::protobuf::Message;
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
 using ::testing::AssertionFailure;
-
-AssertionResult IsOk(GError *err) {
-  if (err) {
-    return AssertionFailure() << err->message;
-  } else {
-    return AssertionSuccess() << "No error occurred";
-  }
-}
 
 AssertionResult IsEqual(const Message &a, const Message &b) {
   std::string differences;

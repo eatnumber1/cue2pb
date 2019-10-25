@@ -4,12 +4,11 @@
 #include <istream>
 
 #include "cue2pb/cuesheet.pb.h"
-#include "cue2pb/errors.h"
-#include "absl/types/optional.h"
+#include "rhutil/status.h"
 
 namespace cue2pb {
 
-absl::optional<Cuesheet> ParseCuesheet(std::istream *input, GError **error);
+rhutil::StatusOr<Cuesheet> ParseCuesheet(std::istream *input);
 
 }  // namespace cue2pb
 

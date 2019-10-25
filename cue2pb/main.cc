@@ -6,9 +6,8 @@
 #include <stdlib.h>
 #include <ios>
 
-#include <glib.h>
-
 #include "cue2pb/parser.h"
+#include "rhutil/status.h"
 #include "cue2pb/unparser.h"
 #include "cue2pb/file.h"
 #include "cue2pb/text_format.h"
@@ -31,8 +30,12 @@ namespace cue2pb {
 
 using ::google::protobuf::TextFormat;
 using ::google::protobuf::io::OstreamOutputStream;
+using ::rhutil::Status;
+using ::rhutil::OkStatus;
+using ::rhutil::UnknownError;
+using ::rhutil::InvalidArgumentError;
 
-bool ProtoToCue(absl::string_view protofile, GError **error) {
+Status ProtoToCue(absl::string_view protofile) {
   bool textformat = absl::GetFlag(FLAGS_textformat);
 
   auto mode = std::ios::in;
@@ -40,27 +43,23 @@ bool ProtoToCue(absl::string_view protofile, GError **error) {
     mode |= std::ios::binary;
   }
 
-  std::ifstream istrm = OpenInputFile(protofile, mode, error);
-  if (!istrm.is_open()) return false;
+  ASSIGN_OR_RETURN(std::ifstream istrm, OpenInputFile(protofile, mode));
 
   Cuesheet cuesheet;
   if (textformat) {
-    auto c = CuesheetFromTextProto(&istrm, error);
-    if (!c) return false;
-    cuesheet = std::move(*c);
+    ASSIGN_OR_RETURN(cuesheet, CuesheetFromTextProto(&istrm));
   } else {
     if (!cuesheet.ParseFromIstream(&istrm)) {
-      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to parse binary proto");
-      return false;
+      return UnknownError("Failed to parse binary proto");
     }
   }
 
-  if (!UnparseCuesheet(cuesheet, &std::cout, error)) return false;
+  RETURN_IF_ERROR(UnparseCuesheet(cuesheet, &std::cout));
 
-  return true;
+  return OkStatus();
 }
 
-bool CueToProto(absl::string_view cuefile, GError **error) {
+Status CueToProto(absl::string_view cuefile) {
   bool textformat = absl::GetFlag(FLAGS_textformat);
 
   auto mode = std::ios::in;
@@ -68,39 +67,32 @@ bool CueToProto(absl::string_view cuefile, GError **error) {
     mode |= std::ios::binary;
   }
 
-  std::ifstream istrm = OpenInputFile(cuefile, mode, error);
-  if (!istrm.is_open()) return false;
-
-  absl::optional<Cuesheet> cuesheet = ParseCuesheet(&istrm, error);
-  if (!cuesheet) return false;
+  ASSIGN_OR_RETURN(std::ifstream istrm, OpenInputFile(cuefile, mode));
+  ASSIGN_OR_RETURN(Cuesheet cuesheet, ParseCuesheet(&istrm));
 
   if (textformat) {
     OstreamOutputStream cout_os(&std::cout);
-    if (!TextFormat::Print(*cuesheet, &cout_os)) {
-      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to print cuesheet");
-      return false;
+    if (!TextFormat::Print(cuesheet, &cout_os)) {
+      return UnknownError("Failed to print cuesheet");
     }
   } else {
-    if (!cuesheet->SerializeToOstream(&std::cout)) {
-      SetError(error, cue2pb::ERR_UNKNOWN, "Failed to serialize binary proto");
-      return false;
+    if (!cuesheet.SerializeToOstream(&std::cout)) {
+      return UnknownError("Failed to serialize binary proto");
     }
   }
 
-  return true;
+  return OkStatus();
 }
 
-bool Main(absl::Span<absl::string_view> args, GError **error) {
+Status Main(absl::Span<absl::string_view> args) {
   if (args.size() != 1) {
-    SetError(error, cue2pb::ERR_USAGE,
-             "No cuefile specified or too many arguments");
-    return false;
+    return InvalidArgumentError("No cuefile specified or too many arguments");
   }
 
   if (absl::GetFlag(FLAGS_proto_to_cue)) {
-    return ProtoToCue(args[0], error);
+    return ProtoToCue(args[0]);
   } else {
-    return CueToProto(args[0], error);
+    return CueToProto(args[0]);
   }
 }
 
@@ -119,13 +111,13 @@ int main(int argc, char *argv[]) {
   std::vector<char*> cargs = absl::ParseCommandLine(argc, argv);
   std::vector<absl::string_view> args(cargs.begin(), cargs.end());
 
-  GError *err = nullptr;
-  if (!cue2pb::Main(absl::MakeSpan(args).subspan(1), &err)) {
-    if (err->domain == CUE2PB_ERROR && err->code == cue2pb::ERR_USAGE) {
+  using ::rhutil::Status;
+  if (Status err = cue2pb::Main(absl::MakeSpan(args).subspan(1)); !err.ok()) {
+    if (err.code() == rhutil::StatusCode::kInvalidArgument) {
       std::cerr << absl::ProgramUsageMessage() << std::endl << std::endl;
     }
-    std::cerr << err->message << std::endl;
-    return err->code;
+    std::cerr << err << std::endl;
+    return static_cast<int>(err.code());
   }
   return EXIT_SUCCESS;
 }

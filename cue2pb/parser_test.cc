@@ -8,48 +8,42 @@
 #include "gtest/gtest.h"
 #include "cue2pb/file.h"
 #include "cue2pb/text_format.h"
-#include "cue2pb/errors.h"
+#include "rhutil/status.h"
 #include "cue2pb/testing/assertions.h"
-#include "absl/types/optional.h"
-#include "absl/strings/string_view.h"
+#include "rhutil/testing/assertions.h"
 
 namespace cue2pb {
+
+using ::rhutil::IsOk;
+using ::rhutil::StatusOr;
+
 namespace {
 
-std::string TestdataToPath(absl::string_view filename) {
+std::string TestdataToPath(std::string_view filename) {
   return "cue2pb/testdata/" + std::string(filename);
 }
 
-std::ifstream OpenTestdataOrDie(absl::string_view filename) {
-  GError *err = nullptr;
-  std::ifstream istrm = OpenInputFile(TestdataToPath(filename), &err);
-  CHECK_OK(err);
-  return istrm;
+std::ifstream OpenTestdataOrDie(std::string_view filename) {
+  return OpenInputFile(TestdataToPath(filename)).ValueOrDie();
 }
 
-Cuesheet CuesheetFromProtoFileOrDie(absl::string_view filename) {
+Cuesheet CuesheetFromProtoFileOrDie(std::string_view filename) {
   std::ifstream istrm = OpenTestdataOrDie(filename);
-
-  GError *err = nullptr;
-  auto cuesheet = CuesheetFromTextProto(&istrm, &err);
-  CHECK_OK(err);
-
-  return std::move(*cuesheet);
+  auto cuesheet_or = CuesheetFromTextProto(&istrm);
+  CHECK_OK(cuesheet_or.status());
+  return std::move(cuesheet_or).ValueOrDie();
 }
 
-Cuesheet CuesheetFromProtoStringOrDie(absl::string_view textproto) {
+Cuesheet CuesheetFromProtoStringOrDie(std::string_view textproto) {
   std::istringstream istrm{std::string(textproto)};
-  GError *err = nullptr;
-  auto cuesheet = CuesheetFromTextProto(&istrm, &err);
-  CHECK_OK(err);
-
-  return std::move(*cuesheet);
+  auto cuesheet_or = CuesheetFromTextProto(&istrm);
+  CHECK_OK(cuesheet_or.status());
+  return std::move(cuesheet_or).ValueOrDie();
 }
 
-absl::optional<Cuesheet> ParseCuesheetFromString(absl::string_view s,
-                                                 GError **error) {
+StatusOr<Cuesheet> ParseCuesheetFromString(std::string_view s) {
   std::istringstream istrm{std::string(s)};
-  return ParseCuesheet(&istrm, error);
+  return ParseCuesheet(&istrm);
 }
 
 struct CuesheetProtoFiles {
@@ -61,7 +55,7 @@ class CuesheetEqualsProtoFilesTest :
     public testing::TestWithParam<CuesheetProtoFiles> {};
 
 struct CuesheetProtoSample {
-  CuesheetProtoSample(absl::string_view textproto, std::string cuesheet)
+  CuesheetProtoSample(std::string_view textproto, std::string cuesheet)
       : cuesheet(std::move(cuesheet)) {
     expected = CuesheetFromProtoStringOrDie(textproto);
   }
@@ -80,11 +74,10 @@ TEST_P(CuesheetEqualsProtoFilesTest, MatchFiles) {
 
   std::ifstream istrm = OpenTestdataOrDie(files.cuesheet);
 
-  GError *err = nullptr;
-  auto found = ParseCuesheet(&istrm, &err);
-  ASSERT_TRUE(IsOk(err));
+  auto found_or = ParseCuesheet(&istrm);
+  ASSERT_TRUE(IsOk(found_or));
 
-  EXPECT_TRUE(IsEqual(expected, *found));
+  EXPECT_TRUE(IsEqual(expected, found_or.ValueOrDie()));
 }
 
 TEST_P(CuesheetEqualsProtoTest, MatchSample) {
@@ -92,11 +85,10 @@ TEST_P(CuesheetEqualsProtoTest, MatchSample) {
   const Cuesheet &expected = p.expected;
   const std::string &cuesheet = p.cuesheet;
 
-  GError *err = nullptr;
-  auto found = ParseCuesheetFromString(cuesheet, &err);
-  ASSERT_TRUE(IsOk(err));
+  auto found_or = ParseCuesheetFromString(cuesheet);
+  ASSERT_TRUE(IsOk(found_or));
 
-  EXPECT_TRUE(IsEqual(expected, *found));
+  EXPECT_TRUE(IsEqual(expected, found_or.ValueOrDie()));
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -179,9 +171,7 @@ TEST(ParseInvalidTest, MissingFileType) {
     FILE "The Specials - Singles.wav"
   )""");
 
-  GError *err = nullptr;
-  ParseCuesheet(&istrm, &err);
-  ASSERT_FALSE(IsOk(err));
+  ASSERT_FALSE(IsOk(ParseCuesheet(&istrm)));
 }
 
 TEST(ParseInvalidTest, CommandsOutOfOrder) {
@@ -191,9 +181,7 @@ TEST(ParseInvalidTest, CommandsOutOfOrder) {
     TRACK 01 AUDIO
   )""");
 
-  GError *err = nullptr;
-  ParseCuesheet(&istrm, &err);
-  ASSERT_FALSE(IsOk(err));
+  ASSERT_FALSE(IsOk(ParseCuesheet(&istrm)));
 }
 
 TEST(ParseInvalidTest, MissingTrack) {
@@ -202,9 +190,7 @@ TEST(ParseInvalidTest, MissingTrack) {
     INDEX 01 00:00:00
   )""");
 
-  GError *err = nullptr;
-  ParseCuesheet(&istrm, &err);
-  ASSERT_FALSE(IsOk(err));
+  ASSERT_FALSE(IsOk(ParseCuesheet(&istrm)));
 }
 
 }  // namespace

@@ -8,7 +8,6 @@ cc_library(
     hdrs = ["assertions.h"],
     srcs = ["assertions.cc"],
     deps = [
-        "//cue2pb:errors",
         "@googletest//:gtest",
         "@com_google_protobuf//:protobuf",
     ],

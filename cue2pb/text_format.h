@@ -4,14 +4,12 @@
 #include <fstream>
 #include <ios>
 
-#include "cue2pb/errors.h"
 #include "cue2pb/cuesheet.pb.h"
-#include "absl/types/optional.h"
+#include "rhutil/status.h"
 
 namespace cue2pb {
 
-absl::optional<Cuesheet> CuesheetFromTextProto(std::istream *input,
-                                               GError **error);
+rhutil::StatusOr<Cuesheet> CuesheetFromTextProto(std::istream *input);
 
 }  // namespace cue2pb
 
