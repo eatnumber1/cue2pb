@@ -9,7 +9,7 @@
 #include "cue2pb/parser.h"
 #include "rhutil/status.h"
 #include "cue2pb/unparser.h"
-#include "cue2pb/file.h"
+#include "rhutil/file.h"
 #include "cue2pb/text_format.h"
 #include "cue2pb/cuesheet.pb.h"
 #include "absl/types/span.h"
@@ -34,6 +34,7 @@ using ::rhutil::Status;
 using ::rhutil::OkStatus;
 using ::rhutil::UnknownError;
 using ::rhutil::InvalidArgumentError;
+using ::rhutil::OpenInputFile;
 
 Status ProtoToCue(absl::string_view protofile) {
   bool textformat = absl::GetFlag(FLAGS_textformat);

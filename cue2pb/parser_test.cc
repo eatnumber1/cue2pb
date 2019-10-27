@@ -6,16 +6,18 @@
 #include <sstream>
 
 #include "gtest/gtest.h"
-#include "cue2pb/file.h"
+#include "rhutil/file.h"
 #include "cue2pb/text_format.h"
 #include "rhutil/status.h"
-#include "cue2pb/testing/assertions.h"
+#include "rhutil/testing/protobuf_assertions.h"
 #include "rhutil/testing/assertions.h"
 
 namespace cue2pb {
 
 using ::rhutil::IsOk;
+using ::rhutil::IsEqual;
 using ::rhutil::StatusOr;
+using ::rhutil::OpenInputFile;
 
 namespace {
 

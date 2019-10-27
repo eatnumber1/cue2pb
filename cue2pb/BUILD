@@ -18,18 +18,6 @@ proto_library(
 )
 
 cc_library(
-    name = "file",
-    srcs = ["file.cc"],
-    hdrs = ["file.h"],
-    deps = [
-        "@rhutil//rhutil:status",
-        "@rhutil//rhutil:errno",
-        "@abseil//absl/strings",
-        "@abseil//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "text_format",
     srcs = ["text_format.cc"],
     hdrs = ["text_format.h"],
@@ -60,10 +48,10 @@ cc_test(
     srcs = ["parser_test.cc"],
     deps = [
         ":parser",
-        ":file",
         ":text_format",
-        "//cue2pb/testing:assertions",
+        "@rhutil//rhutil:file",
         "@rhutil//rhutil/testing:assertions",
+        "@rhutil//rhutil/testing:protobuf_assertions",
         "@googletest//:gtest_main",
         "@abseil//absl/strings",
     ],
@@ -91,9 +79,9 @@ cc_test(
     srcs = ["unparser_test.cc"],
     deps = [
         ":unparser",
-        ":file",
+        "@rhutil//rhutil:file",
         ":text_format",
-        "//cue2pb/testing:assertions",
+        "@rhutil//rhutil/testing:protobuf_assertions",
         "@rhutil//rhutil/testing:assertions",
         "@rhutil//rhutil:errno",
         "@rhutil//rhutil:status",
@@ -113,7 +101,7 @@ cc_binary(
         ":parser",
         ":unparser",
         ":text_format",
-        ":file",
+        "@rhutil//rhutil:file",
         ":cuesheet_cc_proto",
         "@abseil//absl/strings",
         "@abseil//absl/types:span",
