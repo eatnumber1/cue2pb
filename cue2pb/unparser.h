@@ -4,11 +4,11 @@
 #include <ostream>
 
 #include "cue2pb/cuesheet.pb.h"
-#include "rhutil/status.h"
+#include "absl/status/status.h"
 
 namespace cue2pb {
 
-rhutil::Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output);
+absl::Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output);
 
 }  // namespace cue2pb
 

@@ -7,14 +7,11 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "util/status_builder.h"
+#include "util/status_macros.h"
+#include "absl/status/statusor.h"
 
 namespace cue2pb {
-
-using ::rhutil::StatusOr;
-using ::rhutil::Status;
-using ::rhutil::InvalidArgumentError;
-using ::rhutil::OkStatus;
-
 namespace {
 
 std::string QuoteIfNeeded(std::string_view s) {
@@ -24,7 +21,7 @@ std::string QuoteIfNeeded(std::string_view s) {
   return std::string(s);
 }
 
-StatusOr<std::string> FileTypeToString(Cuesheet::File::Type type) {
+absl::StatusOr<std::string> FileTypeToString(Cuesheet::File::Type type) {
   using File = ::cue2pb::Cuesheet::File;
 
   std::string type_str;
@@ -45,14 +42,14 @@ StatusOr<std::string> FileTypeToString(Cuesheet::File::Type type) {
       type_str = "MOTOROLA";
       break;
     default:
-      return InvalidArgumentError(
-          absl::StrFormat("Unknown file type: '%s'", File::Type_Name(type)));
+      return util::InvalidArgumentErrorBuilder()
+          << "Unknown file type: '" << File::Type_Name(type) << "'";
   }
 
   return std::move(type_str);
 }
 
-StatusOr<std::string> TrackTypeToString(Cuesheet::Track::Type type) {
+absl::StatusOr<std::string> TrackTypeToString(Cuesheet::Track::Type type) {
   using Track = ::cue2pb::Cuesheet::Track;
 
   std::string type_str;
@@ -82,14 +79,14 @@ StatusOr<std::string> TrackTypeToString(Cuesheet::Track::Type type) {
       type_str = "CDI/2352";
       break;
     default:
-      return InvalidArgumentError(
-          absl::StrFormat("Unknown track type: '%s'", Track::Type_Name(type)));
+      return util::InvalidArgumentErrorBuilder()
+          << "Unknown track type: '" << Track::Type_Name(type) << "'";
   }
 
   return std::move(type_str);
 }
 
-StatusOr<std::string> FlagToString(Cuesheet::Track::Flag flag) {
+absl::StatusOr<std::string> FlagToString(Cuesheet::Track::Flag flag) {
   using Track = ::cue2pb::Cuesheet::Track;
 
   std::string flag_str;
@@ -104,8 +101,8 @@ StatusOr<std::string> FlagToString(Cuesheet::Track::Flag flag) {
       flag_str = "PRE";
       break;
     default:
-      return InvalidArgumentError(
-          absl::StrFormat("Unknown track flag: '%s'", Track::Flag_Name(flag)));
+      return util::InvalidArgumentErrorBuilder()
+          << "Unknown track flag: '" << Track::Flag_Name(flag) << "'";
   }
 
   return std::move(flag_str);
@@ -120,7 +117,7 @@ bool IsZeroMSF(const Cuesheet::MSF &msf) {
   return msf.minute() == 0 && msf.second() == 0 && msf.frame() == 0;
 }
 
-Status UnparseTags(const Cuesheet::Tags &tags, std::ostream *output) {
+absl::Status UnparseTags(const Cuesheet::Tags &tags, std::ostream *output) {
   for (const Cuesheet::CommentTag &tag : tags.comment_tag()) {
     *output << "REM " << tag.name() << " " << QuoteIfNeeded(tag.value())
             << std::endl;
@@ -140,16 +137,16 @@ Status UnparseTags(const Cuesheet::Tags &tags, std::ostream *output) {
             << std::endl;
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status UnparseIndex(const Cuesheet::Index &index, std::ostream *output) {
+absl::Status UnparseIndex(const Cuesheet::Index &index, std::ostream *output) {
   *output << "INDEX " << absl::StrFormat("%02d", index.number()) << " "
           << MSFToString(index.position()) << std::endl;
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status UnparseTrack(const Cuesheet::Track &track, std::ostream *output) {
+absl::Status UnparseTrack(const Cuesheet::Track &track, std::ostream *output) {
   ASSIGN_OR_RETURN(auto type, TrackTypeToString(track.type()));
 
   *output << "TRACK " << absl::StrFormat("%02d", track.number()) << " " << type
@@ -182,10 +179,10 @@ Status UnparseTrack(const Cuesheet::Track &track, std::ostream *output) {
     RETURN_IF_ERROR(UnparseIndex(index, output));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status UnparseFile(const Cuesheet::File &file, std::ostream *output) {
+absl::Status UnparseFile(const Cuesheet::File &file, std::ostream *output) {
   ASSIGN_OR_RETURN(auto type, FileTypeToString(file.type()));
 
   *output << "FILE " << QuoteIfNeeded(file.path()) << " " << type << std::endl;
@@ -194,12 +191,12 @@ Status UnparseFile(const Cuesheet::File &file, std::ostream *output) {
     RETURN_IF_ERROR(UnparseTrack(track, output));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 }  // namespace
 
-Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output) {
+absl::Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output) {
   RETURN_IF_ERROR(UnparseTags(cuesheet.tags(), output));
 
   if (!cuesheet.catalog().empty()) {
@@ -215,7 +212,7 @@ Status UnparseCuesheet(const Cuesheet &cuesheet, std::ostream *output) {
     RETURN_IF_ERROR(UnparseFile(file, output));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 }  // namespace cue2pb

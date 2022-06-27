@@ -9,9 +9,6 @@
 
 namespace cue2pb {
 
-using ::rhutil::Status;
-using ::rhutil::StatusOr;
-using ::rhutil::StatusCode;
 using ::google::protobuf::io::IstreamInputStream;
 using ::google::protobuf::TextFormat;
 
@@ -19,7 +16,7 @@ class StatusCollector : public ::google::protobuf::io::ErrorCollector {
  public:
   struct Options {
     bool include_warnings = true;
-    StatusCode code = StatusCode::kInvalidArgument;
+    absl::StatusCode code = absl::StatusCode::kInvalidArgument;
   };
 
   StatusCollector(Options options)
@@ -45,16 +42,16 @@ class StatusCollector : public ::google::protobuf::io::ErrorCollector {
                                                    line, column, message)});
   }
 
-  Status status() const {
+  absl::Status status() const {
     return status_;
   }
 
  private:
   Options options_;
-  Status status_;
+  absl::Status status_;
 };
 
-StatusOr<Cuesheet> CuesheetFromTextProto(std::istream *input) {
+absl::StatusOr<Cuesheet> CuesheetFromTextProto(std::istream *input) {
   IstreamInputStream istrm(input);
   StatusCollector collector(/*options=*/{});
   TextFormat::Parser parser;

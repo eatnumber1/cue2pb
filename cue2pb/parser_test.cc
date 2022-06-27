@@ -6,18 +6,17 @@
 #include <sstream>
 
 #include "gtest/gtest.h"
-#include "rhutil/file.h"
+#include "util/file.h"
 #include "cue2pb/text_format.h"
-#include "rhutil/status.h"
-#include "rhutil/testing/protobuf_assertions.h"
-#include "rhutil/testing/assertions.h"
+#include "absl/status/statusor.h"
+#include "util/testing/protobuf_assertions.h"
+#include "util/testing/assertions.h"
+#include "util/status_macros.h"
 
 namespace cue2pb {
 
-using ::rhutil::IsOk;
-using ::rhutil::IsEqual;
-using ::rhutil::StatusOr;
-using ::rhutil::OpenInputFile;
+using ::util::IsOk;
+using ::util::IsEqual;
 
 namespace {
 
@@ -26,24 +25,24 @@ std::string TestdataToPath(std::string_view filename) {
 }
 
 std::ifstream OpenTestdataOrDie(std::string_view filename) {
-  return OpenInputFile(TestdataToPath(filename)).ValueOrDie();
+  return util::OpenInputFile(TestdataToPath(filename)).value();
 }
 
 Cuesheet CuesheetFromProtoFileOrDie(std::string_view filename) {
   std::ifstream istrm = OpenTestdataOrDie(filename);
-  auto cuesheet_or = CuesheetFromTextProto(&istrm);
-  CHECK_OK(cuesheet_or.status());
-  return std::move(cuesheet_or).ValueOrDie();
+  absl::StatusOr<Cuesheet> cuesheet = CuesheetFromTextProto(&istrm);
+  CHECK_OK(cuesheet.status());
+  return *std::move(cuesheet);
 }
 
 Cuesheet CuesheetFromProtoStringOrDie(std::string_view textproto) {
   std::istringstream istrm{std::string(textproto)};
-  auto cuesheet_or = CuesheetFromTextProto(&istrm);
-  CHECK_OK(cuesheet_or.status());
-  return std::move(cuesheet_or).ValueOrDie();
+  absl::StatusOr<Cuesheet> cuesheet = CuesheetFromTextProto(&istrm);
+  CHECK_OK(cuesheet.status());
+  return *std::move(cuesheet);
 }
 
-StatusOr<Cuesheet> ParseCuesheetFromString(std::string_view s) {
+absl::StatusOr<Cuesheet> ParseCuesheetFromString(std::string_view s) {
   std::istringstream istrm{std::string(s)};
   return ParseCuesheet(&istrm);
 }
@@ -76,10 +75,9 @@ TEST_P(CuesheetEqualsProtoFilesTest, MatchFiles) {
 
   std::ifstream istrm = OpenTestdataOrDie(files.cuesheet);
 
-  auto found_or = ParseCuesheet(&istrm);
-  ASSERT_TRUE(IsOk(found_or));
-
-  EXPECT_TRUE(IsEqual(expected, found_or.ValueOrDie()));
+  absl::StatusOr<Cuesheet> found = ParseCuesheet(&istrm);
+  ASSERT_TRUE(IsOk(found));
+  EXPECT_TRUE(IsEqual(expected, *found));
 }
 
 TEST_P(CuesheetEqualsProtoTest, MatchSample) {
@@ -87,10 +85,9 @@ TEST_P(CuesheetEqualsProtoTest, MatchSample) {
   const Cuesheet &expected = p.expected;
   const std::string &cuesheet = p.cuesheet;
 
-  auto found_or = ParseCuesheetFromString(cuesheet);
-  ASSERT_TRUE(IsOk(found_or));
-
-  EXPECT_TRUE(IsEqual(expected, found_or.ValueOrDie()));
+  absl::StatusOr<Cuesheet> found = ParseCuesheetFromString(cuesheet);
+  ASSERT_TRUE(IsOk(found));
+  EXPECT_TRUE(IsEqual(expected, *found));
 }
 
 INSTANTIATE_TEST_SUITE_P(

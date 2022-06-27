@@ -5,56 +5,54 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <stddef.h>
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
+#include "absl/status/status.h"
+#include "util/status_builder.h"
+#include "util/status_macros.h"
 
 namespace cue2pb {
-
-using ::rhutil::StatusOr;
-using ::rhutil::Status;
-using ::rhutil::OkStatus;
-using ::rhutil::InvalidArgumentError;
-
 namespace {
 
-StatusOr<int> ParseInt(std::string_view str) {
+absl::StatusOr<int> ParseInt(std::string_view str) {
   int ret = -1;
   if (!absl::SimpleAtoi(str, &ret)) {
-    return InvalidArgumentError(
-        absl::StrFormat("Could not parse '%s' as an int", str));
+    return util::InvalidArgumentErrorBuilder()
+        << "Could not parse '" << str << "' as an int";
   }
   return ret;
 }
 
-StatusOr<Cuesheet::File*> MutableLastFile(Cuesheet *cuesheet) {
+absl::StatusOr<Cuesheet::File*> MutableLastFile(Cuesheet *cuesheet) {
   int num_files = cuesheet->file_size();
   if (num_files == 0) {
-    return InvalidArgumentError("No files (yet) in this cuesheet");
+    return absl::InvalidArgumentError("No files (yet) in this cuesheet");
   }
   return cuesheet->mutable_file(num_files - 1);
 }
 
-StatusOr<Cuesheet::Track*> MutableLastTrack(Cuesheet *cuesheet) {
+absl::StatusOr<Cuesheet::Track*> MutableLastTrack(Cuesheet *cuesheet) {
   ASSIGN_OR_RETURN(Cuesheet::File *file, MutableLastFile(cuesheet));
 
   int num_tracks = file->track_size();
   if (num_tracks == 0) {
-    return InvalidArgumentError(
-        absl::StrFormat("No tracks (yet) in FILE block of '%s'", file->path()));
+    return util::InvalidArgumentErrorBuilder()
+        << "No tracks (yet) in FILE block of '" << file->path() << "'";
   }
   return file->mutable_track(num_tracks - 1);
 }
 
-StatusOr<std::pair<std::string_view, std::string_view>>
+absl::StatusOr<std::pair<std::string_view, std::string_view>>
     ParseString(std::string_view cur) {
   assert(cur[0] == '"');
 
   int closequote_pos = -1;
-  for (int i = 1; i < cur.size(); i++) {
+  for (size_t i = 1; i < cur.size(); i++) {
     if (cur[i] == '"' && cur[i - 1] != '\\') {
       closequote_pos = i;
       break;
@@ -62,8 +60,8 @@ StatusOr<std::pair<std::string_view, std::string_view>>
   }
 
   if (closequote_pos == -1) {
-    return InvalidArgumentError(
-        absl::StrFormat("Couldn't find a closing quote in: '%s'", cur));
+    return util::InvalidArgumentErrorBuilder()
+        << "Couldn't find a closing quote in: '" << cur << "'";
   }
 
   return std::make_pair(
@@ -74,25 +72,25 @@ StatusOr<std::pair<std::string_view, std::string_view>>
 // Parses a string that is either quoted (with no trailing characters), or is
 // unquoted and consumes the entire input string.
 // If an error occurs, str is unmodified.
-Status ParseOptionallyQuotedString(std::string_view *str) {
+absl::Status ParseOptionallyQuotedString(std::string_view *str) {
   if ((*str)[0] == '"') {
     ASSIGN_OR_RETURN(auto p, ParseString(*str));
     if (!p.second.empty()) {
-      return InvalidArgumentError(
-          absl::StrFormat("Trailing garbage after performer: '%s'", p.second));
+      return util::InvalidArgumentErrorBuilder()
+          << "Trailing garbage after performer: '" << p.second << "'";
     }
     *str = p.first;
   }
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-StatusOr<Cuesheet::MSF> ParseMSF(std::string_view cur) {
+absl::StatusOr<Cuesheet::MSF> ParseMSF(std::string_view cur) {
   Cuesheet::MSF msf;
 
   std::vector<std::string_view> splits = absl::StrSplit(cur, ':');
   if (splits.size() != 3) {
-    return InvalidArgumentError(
-        absl::StrFormat("Could not parse '%s' as an MSF", cur));
+    return util::InvalidArgumentErrorBuilder()
+        << "Could not parse '" << cur << "' as an MSF";
   }
   auto minute_str = splits[0];
   auto second_str = splits[1];
@@ -109,10 +107,11 @@ StatusOr<Cuesheet::MSF> ParseMSF(std::string_view cur) {
   return std::move(msf);
 }
 
-Status ParseIndex(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseIndex(std::string_view cur, Cuesheet *cuesheet) {
   using Index = ::cue2pb::Cuesheet::Index;
+  using Track = ::cue2pb::Cuesheet::Track;
 
-  ASSIGN_OR_RETURN(auto *track, MutableLastTrack(cuesheet));
+  ASSIGN_OR_RETURN(Track *track, MutableLastTrack(cuesheet));
   Index *index = track->add_index();
 
   std::pair<std::string_view, std::string_view> splits =
@@ -126,10 +125,10 @@ Status ParseIndex(std::string_view cur, Cuesheet *cuesheet) {
   index->set_number(indexno);
   *index->mutable_position() = std::move(msf);
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseFile(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseFile(std::string_view cur, Cuesheet *cuesheet) {
   using File = ::cue2pb::Cuesheet::File;
 
   File *file = cuesheet->add_file();
@@ -151,14 +150,14 @@ Status ParseFile(std::string_view cur, Cuesheet *cuesheet) {
   } else if (type == "MOTOROLA") {
     file->set_type(File::TYPE_MOTOROLA);
   } else {
-    return InvalidArgumentError(
-        absl::StrFormat("Unknown file type: '%s'", type));
+    return util::InvalidArgumentErrorBuilder()
+        << "Unknown file type: '" << type << "'";
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseTrack(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseTrack(std::string_view cur, Cuesheet *cuesheet) {
   using Track = ::cue2pb::Cuesheet::Track;
 
   ASSIGN_OR_RETURN(auto *file, MutableLastFile(cuesheet));
@@ -189,14 +188,14 @@ Status ParseTrack(std::string_view cur, Cuesheet *cuesheet) {
   } else if (type_str == "CDI_2352") {
     track->set_type(Track::TYPE_CDI_2352);
   } else {
-    return InvalidArgumentError(
-        absl::StrFormat("Unknown track type: '%s'", type_str));
+    return util::InvalidArgumentErrorBuilder()
+        << "Unknown track type: '" << type_str << "'";
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseComment(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseComment(std::string_view cur, Cuesheet *cuesheet) {
   // Some comments are special. Ones of the form REM <UPPER_TAG> ... are
   // convention to specify additional tags that are not normally supported in
   // cuesheets. Those are supported explicitly here. All other comments are
@@ -208,15 +207,15 @@ Status ParseComment(std::string_view cur, Cuesheet *cuesheet) {
   auto value = absl::StripLeadingAsciiWhitespace(splits.second);
   if (value.empty() || !absl::c_all_of(key, &absl::ascii_isupper)) {
     // This is a non-tag comment.
-    return OkStatus();
+    return absl::OkStatus();
   }
 
   ParseOptionallyQuotedString(&value).IgnoreError();
 
   Cuesheet::Tags *tags = nullptr;
-  auto track_or = MutableLastTrack(cuesheet);
-  if (track_or.ok()) {
-    tags = track_or.ValueOrDie()->mutable_tags();
+  absl::StatusOr<Cuesheet::Track*> track = MutableLastTrack(cuesheet);
+  if (track.ok()) {
+    tags = (*track)->mutable_tags();
   } else {
     tags = cuesheet->mutable_tags();
   }
@@ -224,80 +223,82 @@ Status ParseComment(std::string_view cur, Cuesheet *cuesheet) {
   tag->set_name(std::string(key));
   tag->set_value(std::string(value));
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParsePerformer(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParsePerformer(std::string_view cur, Cuesheet *cuesheet) {
   RETURN_IF_ERROR(ParseOptionallyQuotedString(&cur));
 
-  auto track_or = MutableLastTrack(cuesheet);
-  if (track_or.ok()) {
-    track_or.ValueOrDie()->mutable_tags()->set_performer(std::string(cur));
+  absl::StatusOr<Cuesheet::Track*> track = MutableLastTrack(cuesheet);
+  if (track.ok()) {
+    (*track)->mutable_tags()->set_performer(std::string(cur));
   } else {
     cuesheet->mutable_tags()->set_performer(std::string(cur));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseTitle(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseTitle(std::string_view cur, Cuesheet *cuesheet) {
   RETURN_IF_ERROR(ParseOptionallyQuotedString(&cur));
 
-  auto track_or = MutableLastTrack(cuesheet);
-  if (track_or.ok()) {
-    track_or.ValueOrDie()->mutable_tags()->set_title(std::string(cur));
+  absl::StatusOr<Cuesheet::Track*> track = MutableLastTrack(cuesheet);
+  if (track.ok()) {
+    (*track)->mutable_tags()->set_title(std::string(cur));
   } else {
     cuesheet->mutable_tags()->set_title(std::string(cur));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseSongwriter(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseSongwriter(std::string_view cur, Cuesheet *cuesheet) {
   RETURN_IF_ERROR(ParseOptionallyQuotedString(&cur));
 
-  auto track_or = MutableLastTrack(cuesheet);
-  if (track_or.ok()) {
-    track_or.ValueOrDie()->mutable_tags()->set_songwriter(std::string(cur));
+  absl::StatusOr<Cuesheet::Track*> track = MutableLastTrack(cuesheet);
+  if (track.ok()) {
+    (*track)->mutable_tags()->set_songwriter(std::string(cur));
   } else {
     cuesheet->mutable_tags()->set_songwriter(std::string(cur));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseCatalog(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseCatalog(std::string_view cur, Cuesheet *cuesheet) {
   cuesheet->set_catalog(std::string(cur));
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseCDTextFile(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseCDTextFile(std::string_view cur, Cuesheet *cuesheet) {
   RETURN_IF_ERROR(ParseOptionallyQuotedString(&cur));
   cuesheet->set_cd_text_file(std::string(cur));
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParsePregap(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParsePregap(std::string_view cur, Cuesheet *cuesheet) {
   ASSIGN_OR_RETURN(auto msf, ParseMSF(cur));
-  ASSIGN_OR_RETURN(auto *track, MutableLastTrack(cuesheet));
+  ASSIGN_OR_RETURN(Cuesheet::Track *track, MutableLastTrack(cuesheet));
   *track->mutable_pregap() = std::move(msf);
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParsePostgap(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParsePostgap(std::string_view cur, Cuesheet *cuesheet) {
   ASSIGN_OR_RETURN(auto msf, ParseMSF(cur));
-  ASSIGN_OR_RETURN(auto *track, MutableLastTrack(cuesheet));
+  using Track = ::cue2pb::Cuesheet::Track;
+  ASSIGN_OR_RETURN(Track *track, MutableLastTrack(cuesheet));
   *track->mutable_postgap() = std::move(msf);
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseISRC(std::string_view cur, Cuesheet *cuesheet) {
-  ASSIGN_OR_RETURN(auto *track, MutableLastTrack(cuesheet));
+absl::Status ParseISRC(std::string_view cur, Cuesheet *cuesheet) {
+  using Track = ::cue2pb::Cuesheet::Track;
+  ASSIGN_OR_RETURN(Track *track, MutableLastTrack(cuesheet));
   track->set_isrc(std::string(cur));
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseFlags(std::string_view cur, Cuesheet *cuesheet) {
+absl::Status ParseFlags(std::string_view cur, Cuesheet *cuesheet) {
   using Track = ::cue2pb::Cuesheet::Track;
 
   ASSIGN_OR_RETURN(Track *track, MutableLastTrack(cuesheet));
@@ -312,16 +313,17 @@ Status ParseFlags(std::string_view cur, Cuesheet *cuesheet) {
     } else if (flag == "PRE") {
       track->add_flag(Track::FLAG_PRE);
     } else {
-      return InvalidArgumentError(absl::StrFormat("Unknown flag: '%s'", flag));
+      return util::InvalidArgumentErrorBuilder()
+          << "Unknown flag: '" << flag << "'";
     }
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseLine(std::string_view line, Cuesheet *cuesheet) {
+absl::Status ParseLine(std::string_view line, Cuesheet *cuesheet) {
   line = absl::StripAsciiWhitespace(line);
-  if (line.empty()) return OkStatus();
+  if (line.empty()) return absl::OkStatus();
 
   std::pair<std::string_view, std::string_view> splits =
     absl::StrSplit(line, absl::MaxSplits(' ', 1), absl::SkipEmpty());
@@ -356,21 +358,22 @@ Status ParseLine(std::string_view line, Cuesheet *cuesheet) {
     return ParseTrack(rest, cuesheet);
   }
 
-  return InvalidArgumentError(
-      absl::StrFormat("Invalid command: '%s'", command));
+  return util::InvalidArgumentErrorBuilder()
+      << "Invalid command: '" << command << "'";
 }
 
 }  // namespace
 
-StatusOr<Cuesheet> ParseCuesheet(std::istream *input) {
+absl::StatusOr<Cuesheet> ParseCuesheet(std::istream *input) {
   Cuesheet cuesheet;
 
   int lineno = 1;
   for (std::string line; std::getline(*input, line); lineno++) {
-    Status st = ParseLine(line, &cuesheet);
+    absl::Status st = ParseLine(line, &cuesheet);
     if (!st.ok()) {
-      return Status(st.code(), absl::StrFormat("Error on line %d: %s", lineno,
-                                               st.message()));
+      return absl::Status(
+          st.code(),
+          absl::StrFormat("Error on line %d: %s", lineno, st.message()));
     }
   }
 

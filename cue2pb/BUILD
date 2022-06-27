@@ -1,3 +1,5 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
 package(default_visibility = ["//cue2pb:internal"])
 
 package_group(
@@ -7,8 +9,8 @@ package_group(
 
 cc_proto_library(
     name = "cuesheet_cc_proto",
-    deps = [":cuesheet_proto"],
     visibility = ["//visibility:public"],
+    deps = [":cuesheet_proto"],
 )
 
 proto_library(
@@ -23,90 +25,102 @@ cc_library(
     hdrs = ["text_format.h"],
     deps = [
         ":cuesheet_cc_proto",
-        "@rhutil//rhutil:status",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf",
-        "@abseil//absl/strings:str_format",
     ],
 )
 
 cc_library(
     name = "parser",
-    visibility = ["//visibility:public"],
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cuesheet_cc_proto",
-        "@rhutil//rhutil:status",
-        "@abseil//absl/strings",
-        "@abseil//absl/strings:str_format",
-        "@abseil//absl/algorithm:container",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/status:status",
+        "//util:status_builder",
+        "//util:status_macros",
     ],
 )
 
 cc_test(
     name = "parser_test",
     srcs = ["parser_test.cc"],
+    data = glob([
+        "testdata/*.cue",
+        "testdata/*.textproto",
+    ]),
     deps = [
         ":parser",
         ":text_format",
-        "@rhutil//rhutil:file",
-        "@rhutil//rhutil/testing:assertions",
-        "@rhutil//rhutil/testing:protobuf_assertions",
-        "@googletest//:gtest_main",
-        "@abseil//absl/strings",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "//util:file",
+        "//util/testing:assertions",
+        "//util:status_macros",
+        "//util/testing:protobuf_assertions",
     ],
-    data = glob([
-        "testdata/*.cue",
-        "testdata/*.textproto"
-    ]),
 )
 
 cc_library(
     name = "unparser",
-    visibility = ["//visibility:public"],
     srcs = ["unparser.cc"],
     hdrs = ["unparser.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "@rhutil//rhutil:status",
         ":cuesheet_cc_proto",
-        "@abseil//absl/strings",
-        "@abseil//absl/strings:str_format",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "//util:status_builder",
+        "//util:status_macros",
     ],
 )
 
 cc_test(
     name = "unparser_test",
     srcs = ["unparser_test.cc"],
-    deps = [
-        ":unparser",
-        "@rhutil//rhutil:file",
-        ":text_format",
-        "@rhutil//rhutil/testing:protobuf_assertions",
-        "@rhutil//rhutil/testing:assertions",
-        "@rhutil//rhutil:errno",
-        "@rhutil//rhutil:status",
-        "@googletest//:gtest_main",
-        "@abseil//absl/strings",
-    ],
     data = glob([
         "testdata/*.unparsed_cue",
-        "testdata/*.textproto"
+        "testdata/*.textproto",
     ]),
+    deps = [
+        ":text_format",
+        ":unparser",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "//util:errno",
+        "//util:file",
+        "//util:status_macros",
+        "//util/testing:assertions",
+        "//util/testing:protobuf_assertions",
+    ],
 )
 
 cc_binary(
     name = "cue2pb",
     srcs = ["main.cc"],
     deps = [
-        ":parser",
-        ":unparser",
-        ":text_format",
-        "@rhutil//rhutil:file",
         ":cuesheet_cc_proto",
-        "@abseil//absl/strings",
-        "@abseil//absl/types:span",
-        "@abseil//absl/flags:parse",
+        ":parser",
+        ":text_format",
+        ":unparser",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/debugging:failure_signal_handler",
         "@com_google_protobuf//:protobuf",
-        "@rhutil//rhutil:status",
+        "//util:file",
+        "//util:status_macros",
     ],
 )

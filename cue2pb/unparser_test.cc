@@ -9,19 +9,18 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "rhutil/file.h"
 #include "cue2pb/text_format.h"
-#include "rhutil/status.h"
-#include "rhutil/errno.h"
-#include "rhutil/testing/protobuf_assertions.h"
-#include "rhutil/testing/assertions.h"
+#include "absl/status/statusor.h"
+#include "util/errno.h"
+#include "util/status_macros.h"
+#include "util/file.h"
+#include "util/testing/protobuf_assertions.h"
+#include "util/testing/assertions.h"
 
 namespace cue2pb {
 
-using ::rhutil::IsEqual;
-//using ::rhutil::IsOk;
-using ::rhutil::StatusOr;
-using ::rhutil::OpenInputFile;
+using ::util::IsEqual;
+using ::util::IsOk;
 
 namespace {
 
@@ -30,32 +29,32 @@ std::string TestdataToPath(std::string_view filename) {
 }
 
 std::ifstream OpenTestdataOrDie(std::string_view filename) {
-  return OpenInputFile(TestdataToPath(filename)).ValueOrDie();
+  return util::OpenInputFile(TestdataToPath(filename)).value();
 }
 
-StatusOr<Cuesheet> CuesheetFromProtoString(std::string_view textproto) {
+absl::StatusOr<Cuesheet> CuesheetFromProtoString(std::string_view textproto) {
   std::istringstream istrm{std::string(textproto)};
   return CuesheetFromTextProto(&istrm);
 }
 
 Cuesheet CuesheetFromProtoStringOrDie(std::string_view textproto) {
-  return CuesheetFromProtoString(textproto).ValueOrDie();
+  return CuesheetFromProtoString(textproto).value();
 }
 
 Cuesheet CuesheetFromProtoFileOrDie(std::string_view filename) {
   std::ifstream istrm = OpenTestdataOrDie(filename);
-  return CuesheetFromTextProto(&istrm).ValueOrDie();
+  return CuesheetFromTextProto(&istrm).value();
 }
 
 std::string ReadFileEntirelyOrDie(std::string filename) {
   std::ifstream in = OpenTestdataOrDie(filename);
   std::stringstream sstr;
   sstr << in.rdbuf();
-  if (in.fail()) CHECK_OK(rhutil::ErrnoAsStatus());
+  if (in.fail()) CHECK_OK(util::ErrnoAsStatus());
   return std::move(sstr).str();
 }
 
-StatusOr<std::string> UnparseCuesheet(Cuesheet cuesheet) {
+absl::StatusOr<std::string> UnparseCuesheet(Cuesheet cuesheet) {
   std::stringstream out;
   RETURN_IF_ERROR(UnparseCuesheet(cuesheet, &out));
   return out.str();
@@ -83,10 +82,9 @@ TEST_P(CuesheetEqualsProtoFilesTest, MatchFiles) {
   std::string expected = ReadFileEntirelyOrDie(files.cuesheet);
   Cuesheet incue = CuesheetFromProtoFileOrDie(files.proto);
 
-  auto found_or = UnparseCuesheet(incue);
-  ASSERT_TRUE(IsOk(found_or));
-
-  EXPECT_EQ(expected, found_or.ValueOrDie());
+  absl::StatusOr<std::string> found = UnparseCuesheet(incue);
+  ASSERT_TRUE(IsOk(found));
+  EXPECT_EQ(expected, *found);
 }
 
 TEST_P(CuesheetEqualsProtoTest, MatchSample) {
@@ -96,10 +94,9 @@ TEST_P(CuesheetEqualsProtoTest, MatchSample) {
 
   Cuesheet incue = CuesheetFromProtoStringOrDie(proto);
 
-  auto found_or = UnparseCuesheet(incue);
-  ASSERT_TRUE(IsOk(found_or));
-
-  EXPECT_EQ(expected, found_or.ValueOrDie());
+  absl::StatusOr<std::string> found = UnparseCuesheet(incue);
+  ASSERT_TRUE(IsOk(found));
+  EXPECT_EQ(expected, *found);
 }
 
 INSTANTIATE_TEST_SUITE_P(

@@ -5,11 +5,11 @@
 #include <ios>
 
 #include "cue2pb/cuesheet.pb.h"
-#include "rhutil/status.h"
+#include "absl/status/statusor.h"
 
 namespace cue2pb {
 
-rhutil::StatusOr<Cuesheet> CuesheetFromTextProto(std::istream *input);
+absl::StatusOr<Cuesheet> CuesheetFromTextProto(std::istream *input);
 
 }  // namespace cue2pb
 
